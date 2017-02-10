@@ -337,4 +337,25 @@ describe('Observable.prototype.throttle', () =>  {
       }
     );
   });
+
+  it('should not leak when child completes before next source emit', () => {
+    const oStream = new Rx.Subject<number>();
+    let iStream: Rx.Subject<number>;
+    const aStream = oStream.throttle(() => {
+      return (iStream = new Rx.Subject<number>());
+    });
+    const result = [];
+    let sub = aStream.subscribe((x: number) => result.push(x));
+
+    [0, 1, 2, 3, 4].forEach((n) => {
+      oStream.next(n); // creates inner
+      iStream.complete(); // throttle will unsubscribe iStream here.
+    });
+    expect(result).to.deep.equal([0, 1, 2, 3, 4]);
+    // Expect one child of switch(): The oStream
+    expect(
+      (<any>sub)._subscriptions[0]._innerSub._subscriptions.length
+    ).to.equal(1);
+    sub.unsubscribe();
+  });
 });
