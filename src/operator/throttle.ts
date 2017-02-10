@@ -89,14 +89,13 @@ class ThrottleSubscriber<T, R> extends OuterSubscriber<T, R> {
   }
 
   private emitAndThrottle(value: T, duration: SubscribableOrPromise<number>) {
-    this.add(this.throttled = subscribeToResult(this, duration));
+    this.throttled = this.add(subscribeToResult(this, duration));
     this.destination.next(value);
   }
 
   protected _unsubscribe() {
     const throttled = this.throttled;
     if (throttled) {
-      this.remove(throttled);
       this.throttled = null;
       throttled.unsubscribe();
     }
